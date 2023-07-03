@@ -317,6 +317,7 @@ class AuthApi @Inject constructor(
                         parseSelection(reader)
                     )
                     "rp" -> builder.setRp(parseRp(reader))
+                    else -> reader.skipValue()
                 }
             }
             reader.endObject()
