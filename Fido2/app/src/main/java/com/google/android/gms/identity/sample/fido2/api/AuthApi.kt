@@ -35,6 +35,10 @@ import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialUserEntit
 import com.google.android.gms.identity.sample.fido2.BuildConfig
 import com.google.android.gms.identity.sample.fido2.decodeBase64
 import com.google.android.gms.identity.sample.fido2.toBase64
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -51,8 +55,9 @@ import javax.inject.Inject
  * Interacts with the server API.
  */
 class AuthApi @Inject constructor(
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
 ) {
+    private val ioDispatcher = Dispatchers.IO
 
     companion object {
         private const val BASE_URL = BuildConfig.API_BASE_URL
@@ -101,7 +106,7 @@ class AuthApi @Inject constructor(
      * @param sessionId The session ID.
      * @return A list of all the credentials registered on the server.
      */
-    suspend fun getKeys(sessionId: String): ApiResult<List<Credential>> {
+    suspend fun getKeys(sessionId: String): ApiResult<List<Credential>> = withContext(ioDispatcher) {
         val call = client.newCall(
             Request.Builder()
                 .url("$BASE_URL/getKeys")
@@ -110,7 +115,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val response = call.await()
-        return response.result("Error calling /getKeys") {
+        response.result("Error calling /getKeys") {
             parseUserCredentials(body ?: throw ApiException("Empty response from /getKeys"))
         }
     }
@@ -121,7 +126,7 @@ class AuthApi @Inject constructor(
      * used for a subsequent FIDO2 API call. The `second` element is a challenge string that should
      * be sent back to the server in [registerResponse].
      */
-    suspend fun registerRequest(sessionId: String): ApiResult<PublicKeyCredentialCreationOptions> {
+    suspend fun registerRequest(sessionId: String): ApiResult<PublicKeyCredentialCreationOptions> = withContext(ioDispatcher){
         val call = client.newCall(
             Request.Builder()
                 .url("$BASE_URL/registerRequest")
@@ -136,7 +141,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val response = call.await()
-        return response.result("Error calling /registerRequest") {
+        response.result("Error calling /registerRequest") {
             parsePublicKeyCredentialCreationOptions(
                 body ?: throw ApiException("Empty response from /registerRequest")
             )
@@ -152,7 +157,7 @@ class AuthApi @Inject constructor(
     suspend fun registerResponse(
         sessionId: String,
         credential: PublicKeyCredential
-    ): ApiResult<List<Credential>> {
+    ): ApiResult<List<Credential>> = withContext(ioDispatcher) {
         val rawId = credential.rawId.toBase64()
         val response = credential.response as AuthenticatorAttestationResponse
 
@@ -176,7 +181,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val apiResponse = call.await()
-        return apiResponse.result("Error calling /registerResponse") {
+        apiResponse.result("Error calling /registerResponse") {
             parseUserCredentials(
                 body ?: throw ApiException("Empty response from /registerResponse")
             )
@@ -209,7 +214,7 @@ class AuthApi @Inject constructor(
     suspend fun signinRequest(
         sessionId: String,
         credentialId: String?
-    ): ApiResult<PublicKeyCredentialRequestOptions> {
+    ): ApiResult<PublicKeyCredentialRequestOptions> = withContext(ioDispatcher){
         val call = client.newCall(
             Request.Builder()
                 .url(
@@ -225,7 +230,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val response = call.await()
-        return response.result("Error calling /signinRequest") {
+        response.result("Error calling /signinRequest") {
             parsePublicKeyCredentialRequestOptions(
                 body ?: throw ApiException("Empty response from /signinRequest")
             )
@@ -241,7 +246,7 @@ class AuthApi @Inject constructor(
     suspend fun signinResponse(
         sessionId: String,
         credential: PublicKeyCredential
-    ): ApiResult<List<Credential>> {
+    ): ApiResult<List<Credential>> = withContext(ioDispatcher) {
         val rawId = credential.rawId.toBase64()
         val response = credential.response as AuthenticatorAssertionResponse
 
@@ -271,7 +276,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val apiResponse = call.await()
-        return apiResponse.result("Error calling /signingResponse") {
+        apiResponse.result("Error calling /signingResponse") {
             parseUserCredentials(body ?: throw ApiException("Empty response from /signinResponse"))
         }
     }
