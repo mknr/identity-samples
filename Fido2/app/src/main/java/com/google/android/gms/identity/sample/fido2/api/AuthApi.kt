@@ -32,6 +32,7 @@ import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialRequestOp
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialRpEntity
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialType
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialUserEntity
+import com.google.android.gms.fido.fido2.api.common.ResidentKeyRequirement
 import com.google.android.gms.identity.sample.fido2.BuildConfig
 import com.google.android.gms.identity.sample.fido2.decodeBase64
 import com.google.android.gms.identity.sample.fido2.toBase64
@@ -358,6 +359,7 @@ class AuthApi @Inject constructor(
             }
         }
         reader.endObject()
+        builder.setResidentKeyRequirement(ResidentKeyRequirement.RESIDENT_KEY_PREFERRED)
         return builder.build()
     }
 
